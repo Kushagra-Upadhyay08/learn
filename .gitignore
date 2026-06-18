@@ -1,4 +1,11 @@
-backend/.env
-frontend/.env
-backend/node_modules
+node_modules/
+__pycache__/
+*.pyc
 .env
+.DS_Store
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
