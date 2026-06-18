@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Names & Ages Manager</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h2 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #764ba2;
+    }
+
+    .list {
+      margin-top: 15px;
+    }
+
+    .item {
+      background: #f5f5f5;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .item-info {
+      flex: 1;
+    }
+
+    .item-name {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .item-age {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .delete-btn {
+      width: auto;
+      padding: 5px 10px;
+      margin-left: 10px;
+      background: #e74c3c;
+      font-size: 12px;
+    }
+
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .no-results {
+      color: #999;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 Names & Ages Manager</h1>
+
+    <div class="sections">
+      <!-- Add Name Section -->
+      <div class="card">
+        <h2>➕ Add Name</h2>
+        <input type="text" id="nameInput" placeholder="Enter name">
+        <input type="number" id="ageInput" placeholder="Enter age">
+        <button onclick="addName()">Add</button>
+        <div id="addMessage"></div>
+      </div>
+
+      <!-- View All Section -->
+      <div class="card">
+        <h2>👥 All Names</h2>
+        <button onclick="getAllNames()">Refresh List</button>
+        <div class="list" id="allNamesList"></div>
+      </div>
+
+      <!-- Search Section -->
+      <div class="card">
+        <h2>🔍 Search</h2>
+        <input type="text" id="searchName" placeholder="Search by name">
+        <input type="number" id="searchAge" placeholder="Search by age">
+        <button onclick="search()">Search</button>
+        <div class="list" id="searchResults"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5001/api';
+
+    // Add name
+    async function addName() {
+      const name = document.getElementById('nameInput').value.trim();
+      const age = document.getElementById('ageInput').value.trim();
+      const messageDiv = document.getElementById('addMessage');
+
+      if (!name || !age) {
+        messageDiv.innerHTML = '<div class="error">Please enter name and age</div>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/names`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, age })
+        });
+
+        if (response.ok) {
+          messageDiv.innerHTML = '<div class="success">Added successfully!</div>';
+          document.getElementById('nameInput').value = '';
+          document.getElementById('ageInput').value = '';
+          setTimeout(() => messageDiv.innerHTML = '', 3000);
+          getAllNames();
+        } else {
+          messageDiv.innerHTML = '<div class="error">Error adding name</div>';
+        }
+      } catch (error) {
+        messageDiv.innerHTML = '<div class="error">Server error</div>';
+      }
+    }
+
+    // Get all names
+    async function getAllNames() {
+      try {
+        const response = await fetch(`${API_URL}/names`);
+        const data = await response.json();
+        const listDiv = document.getElementById('allNamesList');
+
+        if (data.length === 0) {
+          listDiv.innerHTML = '<div class="no-results">No names yet</div>';
+          return;
+        }
+
+        listDiv.innerHTML = data.map(item => `
+          <div class="item">
+            <div class="item-info">
+              <div class="item-name">${item.name}</div>
+              <div class="item-age">Age: ${item.age}</div>
+            </div>
+            <button class="delete-btn" onclick="deleteName(${item.id})">Delete</button>
+          </div>
+        `).join('');
+      } catch (error) {
+        document.getElementById('allNamesList').innerHTML = '<div class="error">Error loading names</div>';
+      }
+    }
+
+    // Search
+    async function search() {
+      const name = document.getElementById('searchName').value.trim();
+      const age = document.getElementById('searchAge').value.trim();
+      const resultsDiv = document.getElementById('searchResults');
+
+      if (!name && !age) {
+        resultsDiv.innerHTML = '<div class="error">Enter name or age to search</div>';
+        return;
+      }
+
+      try {
+        let url = `${API_URL}/names/search?`;
+        if (name) url += `name=${encodeURIComponent(name)}`;
+        if (age) url += `${name ? '&' : ''}age=${age}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.length === 0) {
+          resultsDiv.innerHTML = '<div class="no-results">No results found</div>';
+          return;
+        }
+
+        resultsDiv.innerHTML = data.map(item => `
+          <div class="item">
+            <div class="item-info">
+              <div class="item-name">${item.name}</div>
+              <div class="item-age">Age: ${item.age}</div>
+            </div>
+            <button class="delete-btn" onclick="deleteName(${item.id})">Delete</button>
+          </div>
+        `).join('');
+      } catch (error) {
+        resultsDiv.innerHTML = '<div class="error">Error searching</div>';
+      }
+    }
+
+    // Delete name
+    async function deleteName(id) {
+      try {
+        await fetch(`${API_URL}/names/${id}`, { method: 'DELETE' });
+        getAllNames();
+        search();
+      } catch (error) {
+        alert('Error deleting name');
+      }
+    }
+
+    // Load names on page load
+    getAllNames();
+  </script>
+</body>
+</html>
