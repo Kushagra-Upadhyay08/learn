@@ -23,6 +23,12 @@ names = [
 next_id = 4
 
 
+# Root route
+@app.route('/', methods=['GET'])
+def index():
+    return jsonify({'status': 'healthy', 'message': 'Names & Ages Manager API is running'})
+
+
 # Get all names
 @app.route('/api/names', methods=['GET'])
 def get_all_names():
